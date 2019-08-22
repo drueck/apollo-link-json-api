@@ -905,6 +905,11 @@ const resolver: Resolver = async (
     // In a GraphQL context a missing resource should be indicated by
     // a null value rather than throwing a network error
     result = null;
+  } else if (response.status === 422) {
+    console.log('This is getting called');
+    result = {
+      errors: ['an error'],
+    };
   } else {
     // Default error handling:
     // Throw a JSError, that will be available under the

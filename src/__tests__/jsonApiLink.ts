@@ -922,6 +922,49 @@ describe('Query single call', () => {
       );
     }
   });
+
+  it('returns graphql errors when receiving a 422 response with errors', async done => {
+    expect.assertions(1);
+
+    const unprocessableMutation = gql`
+      mutation impossibleThing {
+        impossibleThingResponse @jsonapi(path: "/unprocessable") {
+          content
+        }
+      }
+    `;
+
+    const link = new JsonApiLink({ uri: '/api' });
+
+    const errorLink = onError(({ graphQLErrors }) => {
+      expect(graphQLErrors).toEqual(false);
+    });
+
+    const combinedLink = ApolloLink.from([errorLink, link]);
+
+    fetchMock.get('/api/unprocessable', {
+      status: 422,
+      body: {
+        errors: [
+          {
+            id: 'not_unique',
+            status: '422',
+            title: 'Not Unique',
+            detail: 'The record is not unique',
+          },
+        ],
+      },
+    });
+
+    const client = new ApolloClient({
+      cache: new InMemoryCache(),
+      link: combinedLink,
+    });
+
+    const result = await client.mutate({ mutation: unprocessableMutation });
+    console.log(result);
+    done();
+  });
 });
 
 describe('Use a custom pathBuilder', () => {
